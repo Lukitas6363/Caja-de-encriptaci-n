@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>
+Caja de Encriptación V2.2
+</title>
+
+<style>
+
+/*==================================================
+=
+=           RESET GENERAL
+=
+==================================================*/
+
+*{
+    box-sizing:border-box;
+}
+
+/*==================================================
+=
+=           BODY
+=
+==================================================*/
+
+body{
+
+    font-family:Arial,sans-serif;
+
+    max-width:1000px;
+
+    margin:auto;
+
+    padding:20px;
+
+    background:#f5f5f5;
+
+}
+
+/*==================================================
+=
+=           TITULOS
+=
+==================================================*/
+
+h1{
+
+    text-align:center;
+
+}
+
+h2{
+
+    margin-top:0;
+
+}
+
+/*==================================================
+=
+=           SECCIONES
+=
+==================================================*/
+
+.section{
+
+    background:white;
+
+    padding:15px;
+
+    margin-bottom:15px;
+
+    border-radius:10px;
+
+    box-shadow:0 0 5px rgba(0,0,0,.15);
+
+}
+
+/*==================================================
+=
+=           FILAS DE NODOS
+=
+==================================================*/
+
+.nodeRow{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-bottom:8px;
+
+}
+
+.nodeKey{
+
+    flex:1;
+
+    padding:6px;
+
+}
+
+.deleteBtn{
+
+    width:35px;
+
+    height:35px;
+
+}
+
+/*==================================================
+=
+=           TEXTAREAS
+=
+==================================================*/
+
+textarea{
+
+    width:100%;
+
+    resize:vertical;
+
+    padding:10px;
+
+}
+
+/*==================================================
+=
+=           BOTONES
+=
+==================================================*/
+
+button{
+
+    padding:8px 14px;
+
+    cursor:pointer;
+
+}
+
+.actionButtons{
+
+    display:flex;
+
+    gap:10px;
+
+    flex-wrap:wrap;
+
+    margin-top:10px;
+
+}
+
+/*==================================================
+=
+=           PANEL INFO
+=
+==================================================*/
+
+#infoButton{
+
+    position:fixed;
+
+    top:10px;
+
+    right:10px;
+
+    z-index:1001;
+
+}
+
+#infoPanel{
+
+    position:fixed;
+
+    top:0;
+
+    right:-350px;
+
+    width:320px;
+
+    height:100%;
+
+    background:white;
+
+    border-left:1px solid #ccc;
+
+    padding:20px;
+
+    overflow-y:auto;
+
+    transition:.3s;
+
+    z-index:1000;
+
+}
+
+#infoPanel.open{
+
+    right:0;
+
+}
+
+.infoTitle{
+
+    margin-top:0;
+
+}
+
+/*==================================================
+=
+=           BOTONES GRANDES
+=
+==================================================*/
+
+.addButton{
+
+    width:100%;
+
+}
+
+/*==================================================
+=
+=           FIN CSS
+=
+==================================================*/
+
+</style>
+
+</head>
+
+<body>
+
+<!--==================================================
+=
+=           BOTON INFO
+=
+===================================================-->
+
+<button id="infoButton">
+
+Info
+
+</button>
+
+<!--==================================================
+=
+=           PANEL INFO
+=
+===================================================-->
+
+<div id="infoPanel">
+
+<h2 class="infoTitle">
+
+Información de nodos
+
+</h2>
+
+<hr>
+
+<h3>Reverse</h3>
+
+<p>
+
+Invierte completamente el texto.
+
+</p>
+
+<h3>Atbash</h3>
+
+<p>
+
+Sustituye A↔Z, B↔Y...
+
+</p>
+
+<h3>Shift</h3>
+
+<p>
+
+Número entero.
+
+Ejemplos:
+
+3
+
+-8
+
+15
+
+</p>
+
+<h3>Rotate</h3>
+
+<p>
+
+Número entero.
+
+Rota el texto.
+
+</p>
+
+<h3>XOR</h3>
+
+<p>
+
+Palabra clave.
+
+Ejemplo:
+
+miclave123
+
+</p>
+
+<h3>Vigenère</h3>
+
+<p>
+
+Palabra clave.
+
+Ejemplo:
+
+secreto
+
+</p>
+
+</div>
+
+<!--==================================================
+=
+=           TITULO
+=
+===================================================-->
+
+<h1>
+
+Caja de Encriptación V2.2
+
+</h1>
+
+<!--==================================================
+=
+=           NODOS
+=
+===================================================-->
+
+<div class="section">
+
+<h2>
+
+Cadena de nodos
+
+</h2>
+
+<div id="nodesContainer">
+
+</div>
+
+<button
+
+id="addNodeBtn"
+
+class="addButton">
+
+Agregar nodo
+
+</button>
+
+</div>
+
+<!--==================================================
+=
+=           MENSAJE
+=
+===================================================-->
+
+<div class="section">
+
+<h2>
+
+Mensaje
+
+</h2>
+
+<textarea
+
+id="inputText"
+
+rows="8">
+
+</textarea>
+
+<div class="actionButtons">
+
+<button id="pasteBtn">
+
+Pegar
+
+</button>
+
+<button id="encryptBtn">
+
+Encriptar
+
+</button>
+
+<button id="decryptBtn">
+
+Desencriptar
+
+</button>
+
+</div>
+
+</div>
+
+<!--==================================================
+=
+=           RESULTADO
+=
+===================================================-->
+
+<div class="section">
+
+<h2>
+
+Resultado
+
+</h2>
+
+<textarea
+
+id="outputText"
+
+rows="8"
+
+readonly>
+
+</textarea>
+
+<div class="actionButtons">
+
+<button id="copyBtn">
+
+Copiar
+
+</button>
+
+</div>
+
+</div>
+
+<!--==================================================
+=
+=           JAVASCRIPT
+=
+===================================================-->
+
+<script>
+
+/*==========================================================
+████████████████████████████████████████████████████████████
+                VARIABLES GLOBALES
+████████████████████████████████████████████████████████████
+==========================================================*/
+
+const nodeTypes = [
+    "reverse",
+    "atbash",
+    "shift",
+    "rotate",
+    "xor",
+    "vigenere"
+];
+
+let nodes = [];
+
+
+/*==========================================================
+                INFORMACIÓN DE NODOS
+==========================================================*/
+
+const nodeInfo = {
+
+    reverse:{
+        placeholder:"",
+        tipo:"ninguno"
+    },
+
+    atbash:{
+        placeholder:"",
+        tipo:"ninguno"
+    },
+
+    shift:{
+        placeholder:"Ej: 5 o -3",
+        tipo:"numero"
+    },
+
+    rotate:{
+        placeholder:"Ej: 8",
+        tipo:"numero"
+    },
+
+    xor:{
+        placeholder:"Ej: miclave123",
+        tipo:"texto"
+    },
+
+    vigenere:{
+        placeholder:"Ej: secreto",
+        tipo:"texto"
+    }
+
+};
+
+
+/*==========================================================
+                UTILIDADES
+==========================================================*/
+
+function copiarResultado(){
+    const texto = document.getElementById("outputText").value;
+    navigator.clipboard.writeText(texto);
+}
+async function pegarMensaje(){
+
+    const texto =
+        await navigator.clipboard.readText();
+
+    document.getElementById(
+        "inputText"
+    ).value = texto;
+
+}
+
+function invertirTexto(texto){
+
+    return texto
+        .split("")
+        .reverse()
+        .join("");
+
+}
+
+
+/*==========================================================
+                ATBASH
+==========================================================*/
+
+function atbash(texto){
+
+    const abc =
+        "abcdefghijklmnopqrstuvwxyz";
+
+    const rev =
+        "zyxwvutsrqponmlkjihgfedcba";
+
+    let salida = "";
+
+    for(let c of texto){
+
+        const mayus =
+            c === c.toUpperCase();
+
+        const pos =
+            abc.indexOf(c.toLowerCase());
+
+        if(pos==-1){
+
+            salida += c;
+            continue;
+
+        }
+
+        let letra =
+            rev[pos];
+
+        if(mayus)
+            letra =
+                letra.toUpperCase();
+
+        salida += letra;
+
+    }
+
+    return salida;
+
+}
+
+
+/*==========================================================
+                SHIFT
+==========================================================*/
+
+function shift(texto,valor){
+
+    valor =
+        parseInt(valor)||0;
+
+    let salida="";
+
+    for(let c of texto){
+
+        let inicio=null;
+
+        if(c>='A' && c<='Z')
+            inicio=65;
+
+        if(c>='a' && c<='z')
+            inicio=97;
+
+        if(inicio==null){
+
+            salida+=c;
+            continue;
+
+        }
+
+        let codigo =
+            c.charCodeAt(0)-inicio;
+
+        codigo =
+            (codigo+valor)%26;
+
+        if(codigo<0)
+            codigo+=26;
+
+        salida +=
+            String.fromCharCode(
+                codigo+inicio
+            );
+
+    }
+
+    return salida;
+
+}
+
+
+/*==========================================================
+                ROTATE
+==========================================================*/
+
+function rotate(texto,valor){
+
+    if(texto.length===0)
+        return texto;
+
+    valor =
+        parseInt(valor)||0;
+
+    valor =
+        (
+            (valor%texto.length)
+            +texto.length
+        )%texto.length;
+
+    return texto.slice(valor)
+        +texto.slice(0,valor);
+
+}
+
+
+/*==========================================================
+                XOR
+==========================================================*/
+
+function xor(text,key){
+
+    const encoder =
+        new TextEncoder();
+
+    const bytes =
+        encoder.encode(text);
+
+    const clave =
+        encoder.encode(key);
+
+    const salida =
+        new Uint8Array(bytes.length);
+
+    for(
+        let i=0;
+        i<bytes.length;
+        i++
+    ){
+
+        salida[i]=
+            bytes[i]^
+            clave[
+                i%
+                clave.length
+            ];
+
+    }
+
+    return salida;
+
+}
+
+function xorEncrypt(text,key){
+
+    const bytes =
+        xor(text,key);
+
+    let bin="";
+
+    bytes.forEach(b=>{
+
+        bin +=
+            String.fromCharCode(b);
+
+    });
+
+    return btoa(bin);
+
+}
+
+function xorDecrypt(text,key){
+
+    const data =
+        atob(text);
+
+    const bytes =
+        Uint8Array.from(
+
+            [...data].map(
+
+                c=>c.charCodeAt(0)
+
+            )
+
+        );
+
+    const clave =
+        new TextEncoder()
+        .encode(key);
+
+    const salida =
+        new Uint8Array(bytes.length);
+
+    for(
+        let i=0;
+        i<bytes.length;
+        i++
+    ){
+
+        salida[i]=
+            bytes[i]^
+            clave[
+                i%
+                clave.length
+            ];
+
+    }
+
+    return new TextDecoder()
+        .decode(salida);
+
+}
+
+
+/*==========================================================
+                VIGENERE
+==========================================================*/
+
+function vigenere(text,key){
+
+    key =
+        key.toLowerCase();
+
+    let salida="";
+
+    let j=0;
+
+    for(let c of text){
+
+        if(
+            !/[a-z]/i.test(c)
+        ){
+
+            salida+=c;
+            continue;
+
+        }
+
+        const base =
+            c===c.toUpperCase()
+            ?65
+            :97;
+
+        const desp =
+            key.charCodeAt(
+                j%
+                key.length
+            )-97;
+
+        salida +=
+            String.fromCharCode(
+
+                (
+                    (
+                        c.charCodeAt(0)
+                        -base
+                        +desp
+                    )%26
+                )
+                +base
+
+            );
+
+        j++;
+
+    }
+
+    return salida;
+
+}
+
+function vigenereDecrypt(text,key){
+
+    key =
+        key.toLowerCase();
+
+    let salida="";
+
+    let j=0;
+
+    for(let c of text){
+
+        if(
+            !/[a-z]/i.test(c)
+        ){
+
+            salida+=c;
+            continue;
+
+        }
+
+        const base =
+            c===c.toUpperCase()
+            ?65
+            :97;
+
+        const desp =
+            key.charCodeAt(
+                j%
+                key.length
+            )-97;
+
+        salida +=
+            String.fromCharCode(
+
+                (
+                    (
+                        c.charCodeAt(0)
+                        -base
+                        -desp
+                        +26
+                    )%26
+                )
+                +base
+
+            );
+
+        j++;
+
+    }
+
+    return salida;
+
+}
+/*==========================================================
+████████████████████████████████████████████████████████████
+                RENDER DE NODOS
+████████████████████████████████████████████████████████████
+==========================================================*/
+
+function crearFilaNodo(nodo){
+
+    const fila =
+        document.createElement("div");
+fila.draggable = true;
+
+    fila.className =
+        "nodeRow";
+
+    /*==============================
+            SELECT
+    ==============================*/
+
+const dragHandle = document.createElement("div");
+dragHandle.textContent = "☰";
+dragHandle.style.cursor = "grab";
+dragHandle.style.padding = "6px 10px";
+dragHandle.style.userSelect = "none";
+dragHandle.style.fontSize = "18px";
+
+    const selector =
+        document.createElement("select");
+
+    nodeTypes.forEach(tipo=>{
+
+        const op =
+            document.createElement("option");
+
+        op.value =
+            tipo;
+
+        op.textContent =
+            tipo.charAt(0).toUpperCase()
+            + tipo.slice(1);
+
+        if(tipo===nodo.type)
+            op.selected=true;
+
+        selector.appendChild(op);
+
+    });
+
+    selector.onchange=(e)=>{
+
+        nodo.type =
+            e.target.value;
+
+        renderNodes();
+
+    };
+
+
+    /*==============================
+            INPUT CLAVE
+    ==============================*/
+
+    const clave =
+        document.createElement("input");
+
+    clave.className =
+        "nodeKey";
+
+    clave.value =
+        nodo.key;
+
+    clave.placeholder =
+        nodeInfo[nodo.type].placeholder;
+
+    if(
+        nodeInfo[nodo.type].tipo==="ninguno"
+    ){
+
+        clave.style.display="none";
+
+    }
+
+    clave.oninput=(e)=>{
+
+        nodo.key =
+            e.target.value;
+
+    };
+
+
+    /*==============================
+            BORRAR
+    ==============================*/
+
+    const borrar =
+        document.createElement("button");
+
+    borrar.className =
+        "deleteBtn";
+
+    borrar.textContent =
+        "✖";
+
+    borrar.onclick=()=>{
+
+        nodes =
+            nodes.filter(
+                x=>x.id!==nodo.id
+            );
+
+        renderNodes();
+
+    };
+
+
+    fila.appendChild(dragHandle);
+fila.appendChild(selector);
+    fila.appendChild(clave);
+    fila.appendChild(borrar);
+
+    fila.ondragstart = (e) => {
+    e.dataTransfer.setData("text/plain", nodo.id);
+};
+
+fila.ondragover = (e) => {
+    e.preventDefault();
+};
+
+fila.ondrop = (e) => {
+    e.preventDefault();
+
+    const idArrastrado = e.dataTransfer.getData("text/plain");
+
+    const indexFrom = nodes.findIndex(n => n.id === idArrastrado);
+    const indexTo = nodes.findIndex(n => n.id === nodo.id);
+
+    if (indexFrom === -1 || indexTo === -1) return;
+
+    const [moved] = nodes.splice(indexFrom, 1);
+    nodes.splice(indexTo, 0, moved);
+
+    renderNodes();
+};
+
+return fila;
+
+}
+
+
+/*==========================================================
+                RENDER GENERAL
+==========================================================*/
+
+function renderNodes(){
+
+const cont =
+    document.getElementById(
+        "nodesContainer"
+    );
+
+    cont.innerHTML="";
+
+    nodes.forEach(nodo=>{
+
+        cont.appendChild(
+
+            crearFilaNodo(nodo)
+
+        );
+
+    });
+
+}
+
+
+/*==========================================================
+                AGREGAR NODO
+==========================================================*/
+
+function agregarNodo(){
+
+    nodes.push({
+
+        id:crypto.randomUUID(),
+
+        type:"reverse",
+
+        key:""
+
+    });
+
+    renderNodes();
+
+}
+
+
+/*==========================================================
+                PANEL INFO
+==========================================================*/
+
+const infoButton =
+    document.getElementById(
+        "infoButton"
+    );
+
+const infoPanel =
+    document.getElementById(
+        "infoPanel"
+    );
+
+infoButton.onclick=()=>{
+
+    infoPanel.classList.toggle(
+        "open"
+    );
+
+};
+
+
+/*==========================================================
+                BOTONES
+==========================================================*/
+
+document
+.getElementById(
+    "addNodeBtn"
+)
+.onclick =
+agregarNodo;
+
+document
+.getElementById(
+    "copyBtn"
+)
+.onclick =
+copiarResultado;
+
+
+document
+.getElementById(
+    "pasteBtn"
+)
+.onclick =
+pegarMensaje;
+
+
+/*==========================================================
+                PRIMER RENDER
+==========================================================*/
+
+renderNodes();
+
+
+/*==========================================================
+████████████████████████████████████████████████████████████
+                MOTOR DE ENCRIPTACIÓN V2.2
+████████████████████████████████████████████████████████████
+==========================================================*/
+
+function aplicarNodo(texto,nodo,modo){
+
+    switch(nodo.type){
+
+        case "reverse":
+            return invertirTexto(texto);
+
+        case "atbash":
+            return atbash(texto);
+
+        case "shift":
+
+            return modo==="encrypt"
+                ? shift(texto,nodo.key)
+                : shift(texto,-parseInt(nodo.key||0));
+
+        case "rotate":
+
+            return modo==="encrypt"
+                ? rotate(texto,nodo.key)
+                : rotate(texto,-parseInt(nodo.key||0));
+
+        case "xor":
+
+            return modo==="encrypt"
+                ? xorEncrypt(texto,nodo.key)
+                : xorDecrypt(texto,nodo.key);
+
+        case "vigenere":
+
+            return modo==="encrypt"
+                ? vigenere(texto,nodo.key)
+                : vigenereDecrypt(texto,nodo.key);
+
+    }
+
+    return texto;
+
+}
+
+
+/*==========================================================
+                PROCESAR TEXTO
+==========================================================*/
+
+function procesarTexto(texto,modo){
+
+    let actual = texto;
+
+    if(modo==="encrypt"){
+
+        for(const nodo of nodes){
+
+            actual =
+                aplicarNodo(
+                    actual,
+                    nodo,
+                    "encrypt"
+                );
+
+        }
+
+    }else{
+
+        for(
+            let i=nodes.length-1;
+            i>=0;
+            i--
+        ){
+
+            actual =
+                aplicarNodo(
+                    actual,
+                    nodes[i],
+                    "decrypt"
+                );
+
+        }
+
+    }
+
+    return actual;
+
+}
+
+
+/*==========================================================
+                BOTÓN ENCRIPTAR
+==========================================================*/
+
+document
+.getElementById(
+    "encryptBtn"
+)
+.onclick=()=>{
+
+    const entrada =
+        document.getElementById(
+            "inputText"
+        ).value;
+
+    document.getElementById(
+        "outputText"
+    ).value=
+
+        procesarTexto(
+            entrada,
+            "encrypt"
+        );
+
+};
+
+
+/*==========================================================
+                BOTÓN DESENCRIPTAR
+==========================================================*/
+
+document
+.getElementById(
+    "decryptBtn"
+)
+.onclick=()=>{
+
+    const entrada =
+        document.getElementById(
+            "inputText"
+        ).value;
+
+    document.getElementById(
+        "outputText"
+    ).value=
+
+        procesarTexto(
+            entrada,
+            "decrypt"
+        );
+
+};
+
+</script>
+
+</body>
+
+</html>
