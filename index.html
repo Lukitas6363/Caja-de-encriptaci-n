@@ -10,10 +10,34 @@ name="viewport"
 content="width=device-width, initial-scale=1.0">
 
 <title>
-Caja de Encriptación V2.2
+Caja de Encriptación V2.3
 </title>
 
 <style>
+
+body.dark {
+    background: #121212;
+    color: #eaeaea;
+}
+
+body.dark .section {
+    background: #1e1e1e;
+    box-shadow: 0 0 5px rgba(0,0,0,.6);
+}
+
+body.dark textarea,
+body.dark input,
+body.dark select {
+    background: #2a2a2a;
+    color: #eaeaea;
+    border: 1px solid #444;
+}
+
+body.dark button {
+    background: #333;
+    color: #eaeaea;
+    border: 1px solid #555;
+}
 
 /*==================================================
 =
@@ -98,6 +122,33 @@ h2{
     gap:10px;
 
     margin-bottom:8px;
+
+    padding:4px;
+
+    border-radius:8px;
+
+    transition:
+        transform .15s,
+        background .15s,
+        box-shadow .15s;
+
+}
+
+.nodeRow.dragging{
+
+    opacity:.5;
+
+    transform:scale(.97);
+
+    box-shadow:0 6px 16px rgba(0,0,0,.25);
+
+}
+
+.nodeRow.dragover{
+
+    background:#d8ecff;
+
+    outline:2px dashed #4da3ff;
 
 }
 
@@ -241,6 +292,14 @@ button{
 
 <!--==================================================
 =
+=           BOTON MODO OSCURO
+=
+===================================================-->
+
+<button id="darkModeBtn">🌙</button>
+
+<!--==================================================
+=
 =           BOTON INFO
 =
 ===================================================-->
@@ -343,7 +402,7 @@ secreto
 
 <h1>
 
-Caja de Encriptación V2.2
+Caja de Encriptación V2.3
 
 </h1>
 
@@ -366,14 +425,34 @@ Cadena de nodos
 </div>
 
 <button
-
 id="addNodeBtn"
-
 class="addButton">
 
 Agregar nodo
 
 </button>
+
+<div class="actionButtons">
+
+<button id="exportBtn">
+
+Exportar cadena
+
+</button>
+
+<button id="importBtn">
+
+Importar cadena
+
+</button>
+
+<input
+type="file"
+id="importFile"
+accept=".json"
+style="display:none;">
+
+</div>
 
 </div>
 
@@ -466,6 +545,22 @@ Copiar
 ===================================================-->
 
 <script>
+
+const darkBtn = document.getElementById("darkModeBtn");
+
+darkBtn.onclick = () => {
+    document.body.classList.toggle("dark");
+
+    localStorage.setItem(
+        "darkMode",
+        document.body.classList.contains("dark")
+    );
+};
+
+// cargar estado guardado
+if (localStorage.getItem("darkMode") === "true") {
+    document.body.classList.add("dark");
+}
 
 /*==========================================================
 ████████████████████████████████████████████████████████████
@@ -890,7 +985,6 @@ function crearFilaNodo(nodo){
 
     const fila =
         document.createElement("div");
-fila.draggable = true;
 
     fila.className =
         "nodeRow";
@@ -899,12 +993,46 @@ fila.draggable = true;
             SELECT
     ==============================*/
 
-const dragHandle = document.createElement("div");
-dragHandle.textContent = "☰";
-dragHandle.style.cursor = "grab";
-dragHandle.style.padding = "6px 10px";
-dragHandle.style.userSelect = "none";
-dragHandle.style.fontSize = "18px";
+    const dragHandle =
+        document.createElement("div");
+
+    dragHandle.textContent =
+        "☰";
+
+    dragHandle.style.cursor =
+        "grab";
+
+    dragHandle.style.padding =
+        "6px 10px";
+
+    dragHandle.style.userSelect =
+        "none";
+
+    dragHandle.style.fontSize =
+        "18px";
+
+    dragHandle.draggable =
+        true;
+
+/*==============================
+        CHECKBOX
+==============================*/
+
+const activo =
+    document.createElement("input");
+
+activo.type =
+    "checkbox";
+
+activo.checked =
+    nodo.enabled !== false;
+
+activo.onchange=()=>{
+
+    nodo.enabled =
+        activo.checked;
+
+};
 
     const selector =
         document.createElement("select");
@@ -937,6 +1065,87 @@ dragHandle.style.fontSize = "18px";
 
     };
 
+dragHandle.ondragstart=(e)=>{
+
+    fila.classList.add(
+        "dragging"
+    );
+
+    e.dataTransfer.setData(
+        "text/plain",
+        nodo.id
+    );
+
+};
+
+fila.ondragover=(e)=>{
+
+    e.preventDefault();
+
+    fila.classList.add(
+        "dragover"
+    );
+
+};
+
+fila.ondragleave=()=>{
+
+    fila.classList.remove(
+        "dragover"
+    );
+
+};
+    fila.ondrop=(e)=>{
+
+        e.preventDefault();
+
+        const idArrastrado =
+            e.dataTransfer.getData(
+                "text/plain"
+            );
+
+        const indexFrom =
+            nodes.findIndex(
+                n=>n.id===idArrastrado
+            );
+
+        const indexTo =
+            nodes.findIndex(
+                n=>n.id===nodo.id
+            );
+
+        if(
+            indexFrom===-1 ||
+            indexTo===-1
+        ) return;
+
+        const [moved] =
+            nodes.splice(
+                indexFrom,
+                1
+            );
+
+        nodes.splice(
+            indexTo,
+            0,
+            moved
+        );
+
+fila.classList.remove(
+    "dragover"
+);
+
+document.querySelectorAll(
+    ".nodeRow"
+).forEach(f=>
+    f.classList.remove(
+        "dragging"
+    )
+);
+
+        renderNodes();
+
+    };
 
     /*==============================
             INPUT CLAVE
@@ -968,64 +1177,86 @@ dragHandle.style.fontSize = "18px";
             e.target.value;
 
     };
-
-
     /*==============================
             BORRAR
     ==============================*/
 
-    const borrar =
-        document.createElement("button");
+ const borrar =
+    document.createElement("button");
 
-    borrar.className =
-        "deleteBtn";
+borrar.className =
+    "deleteBtn";
 
-    borrar.textContent =
-        "✖";
+borrar.textContent =
+    "✖";
 
-    borrar.onclick=()=>{
+borrar.onclick=()=>{
 
-        nodes =
-            nodes.filter(
-                x=>x.id!==nodo.id
-            );
-
-        renderNodes();
-
-    };
-
-
-    fila.appendChild(dragHandle);
-fila.appendChild(selector);
-    fila.appendChild(clave);
-    fila.appendChild(borrar);
-
-    fila.ondragstart = (e) => {
-    e.dataTransfer.setData("text/plain", nodo.id);
-};
-
-fila.ondragover = (e) => {
-    e.preventDefault();
-};
-
-fila.ondrop = (e) => {
-    e.preventDefault();
-
-    const idArrastrado = e.dataTransfer.getData("text/plain");
-
-    const indexFrom = nodes.findIndex(n => n.id === idArrastrado);
-    const indexTo = nodes.findIndex(n => n.id === nodo.id);
-
-    if (indexFrom === -1 || indexTo === -1) return;
-
-    const [moved] = nodes.splice(indexFrom, 1);
-    nodes.splice(indexTo, 0, moved);
+    nodes =
+        nodes.filter(
+            x=>x.id!==nodo.id
+        );
 
     renderNodes();
+
 };
 
-return fila;
 
+/*==============================
+        DUPLICAR
+==============================*/
+
+const duplicar =
+    document.createElement("button");
+
+duplicar.className =
+    "deleteBtn";
+
+duplicar.textContent =
+    "⧉";
+
+duplicar.title =
+    "Duplicar nodo";
+
+duplicar.onclick=()=>{
+
+    const indice =
+        nodes.findIndex(
+            x=>x.id===nodo.id
+        );
+
+    nodes.splice(
+        indice+1,
+        0,
+        {
+
+            id:
+                crypto.randomUUID(),
+
+            type:
+                nodo.type,
+
+            key:
+                nodo.key
+
+        }
+
+    );
+
+    renderNodes();
+
+};
+
+
+fila.appendChild(dragHandle);
+fila.appendChild(activo);
+fila.appendChild(selector);
+fila.appendChild(clave);
+fila.appendChild(duplicar);
+fila.appendChild(borrar);
+
+
+return fila;
 }
 
 
@@ -1061,20 +1292,107 @@ const cont =
 
 function agregarNodo(){
 
-    nodes.push({
 
-        id:crypto.randomUUID(),
 
-        type:"reverse",
+nodes.push({
 
-        key:""
+    id:crypto.randomUUID(),
 
-    });
+    type:"reverse",
+
+    key:"",
+
+    enabled:true
+
+});
 
     renderNodes();
 
 }
 
+function exportarCadena(){
+
+    let nombre =
+        prompt(
+            "Nombre de la cadena:",
+            "Mi Cadena"
+        );
+
+    if(nombre===null)
+        return;
+
+    nombre =
+        nombre.trim();
+
+    if(nombre==="")
+        nombre="Mi Cadena";
+
+    const datos =
+        JSON.stringify(
+            nodes,
+            null,
+            4
+        );
+
+    const blob =
+        new Blob(
+            [datos],
+            {
+                type:
+                "application/json"
+            }
+        );
+
+    const enlace =
+        document.createElement("a");
+
+    enlace.href =
+        URL.createObjectURL(blob);
+
+    enlace.download =
+        nombre + ".json";
+
+    enlace.click();
+
+}
+
+function importarCadena(event){
+
+    const archivo =
+        event.target.files[0];
+
+    if(!archivo)
+        return;
+
+    const lector =
+        new FileReader();
+
+    lector.onload=()=>{
+
+        try{
+
+            nodes =
+                JSON.parse(
+                    lector.result
+                );
+
+            renderNodes();
+
+        }catch{
+
+            alert(
+                "Archivo inválido."
+            );
+
+        }
+
+    };
+
+    lector.readAsText(
+        archivo
+    );
+
+}
 
 /*==========================================================
                 PANEL INFO
@@ -1124,6 +1442,34 @@ document
 )
 .onclick =
 pegarMensaje;
+
+document
+.getElementById(
+    "exportBtn"
+)
+.onclick =
+exportarCadena;
+
+document
+.getElementById(
+    "importBtn"
+)
+.onclick=()=>{
+
+    document
+    .getElementById(
+        "importFile"
+    )
+    .click();
+
+};
+
+document
+.getElementById(
+    "importFile"
+)
+.onchange =
+importarCadena;
 
 
 /*==========================================================
@@ -1190,16 +1536,19 @@ function procesarTexto(texto,modo){
 
     if(modo==="encrypt"){
 
-        for(const nodo of nodes){
+for(const nodo of nodes){
 
-            actual =
-                aplicarNodo(
-                    actual,
-                    nodo,
-                    "encrypt"
-                );
+    if(nodo.enabled===false)
+        continue;
 
-        }
+    actual =
+        aplicarNodo(
+            actual,
+            nodo,
+            "encrypt"
+        );
+
+}
 
     }else{
 
@@ -1209,12 +1558,15 @@ function procesarTexto(texto,modo){
             i--
         ){
 
-            actual =
-                aplicarNodo(
-                    actual,
-                    nodes[i],
-                    "decrypt"
-                );
+if(nodes[i].enabled===false)
+    continue;
+
+actual =
+    aplicarNodo(
+        actual,
+        nodes[i],
+        "decrypt"
+    );
 
         }
 
